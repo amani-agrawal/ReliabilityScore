@@ -9,9 +9,9 @@
     "a": "tsx --help"
   },
   "dependencies": {
-    "@worldcoin/minikit-js": "1.1.1",
+    "@worldcoin/minikit-js": "^1.1.1",
     "cors": "^2.8.5",
-    "express": "^4.21.0",
+    "express": "^4.21.2",
     "node-fetch": "^3.3.2",
     "pino-pretty": "^11.0.0",
     "tsx": "^4.7.2"

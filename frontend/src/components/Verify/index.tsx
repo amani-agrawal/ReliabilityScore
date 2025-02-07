@@ -10,13 +10,13 @@ import { useCallback, useState } from "react";
 export type VerifyCommandInput = {
   action: string;
   signal?: string;
-  verification_level?: VerificationLevel; // Default: Orb
+  verification_level?: VerificationLevel.Device; // Default: Orb
 };
 
 const verifyPayload: VerifyCommandInput = {
   action: "test-action", // This is your action ID from the Developer Portal
   signal: "",
-  verification_level: VerificationLevel.Orb, // Orb | Device
+  verification_level: VerificationLevel.Device, // Orb | Device
 };
 
 export const VerifyBlock = () => {
