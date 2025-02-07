@@ -1,3 +1,98 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+.search-input {
+    border-radius: 20px; /* Adjust the value for desired roundness */
+    padding: 10px 20px; /* Add padding for better appearance */
+    border: 1px solid #ccc; /* Optional: Add a border */
+    width: 50%; /* Make it longer */
+
+    display: block;
+    margin: auto; /* Center it on the screen */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center; /* Center placeholder text */
+  }
+
+  .dropdown {
+    border-radius: 20px; /* Adjust the value for desired roundness */
+    padding: 10px 20px; /* Add padding for better appearance */
+    border: 5px solid #ccc; /* Optional: Add a border */
+    width: 50%; /* Make it longer */
+
+    display: block;
+    margin: auto; /* Center it on the screen */
+    position:fixed;
+    top: 15%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center; /* Center placeholder text */
+  }
+
+  /* Container to hold the two sections */
+.container {
+  display: flex;
+  height: 100vh; /* Full height of the screen */
+}
+
+/* Left Box Styles */
+.left-box {
+  width: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.profile-card {
+  width: 40%;
+  padding: 20px;
+  background-color: #cce7ff; /* Light blue background */
+  border-radius: 30px; /* Rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.profile-image {
+  width: 150px;
+  height: 120px;
+  border-radius: 50%; /* Circular image */
+  margin-bottom: 15px;
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Right Box Styles */
+.right-box {
+  width: 50%;
+  padding: 30px;
+  margin-top: 150px;
+  background-color: #f9f9f9; /* Light background */
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding-left: 300px;
+}
+
+.info-list {
+  list-style-type: none;
+  padding-left: 0px;
+  align-content: center;
+}
+
+.info-list li {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  color: #555;
+}
