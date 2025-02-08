@@ -4,6 +4,7 @@ import Details from './ContactDetails';
 import video from './assets/socialgraph.mp4';
 import Calculating from './Loading';
 import Fail from './ConnectionFail';
+import { VerifyBlock } from './components/Verify';
 
 //SAMPLE DATA BELOW --PLS DELETE
 const contacts = [

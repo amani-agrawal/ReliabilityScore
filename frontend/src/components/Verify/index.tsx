@@ -5,7 +5,9 @@ import {
   MiniAppVerifyActionErrorPayload,
   IVerifyResponse,
 } from "@worldcoin/minikit-js";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
+import App from "../../App"; // Import your App component
+import video from '../../assets/socialgraph.mp4';
 
 export type VerifyCommandInput = {
   action: string;
@@ -14,7 +16,7 @@ export type VerifyCommandInput = {
 };
 
 const verifyPayload: VerifyCommandInput = {
-  action: "test-action", // This is your action ID from the Developer Portal
+  action: "Verify Humans", // This is your action ID from the Developer Portal
   signal: "",
   verification_level: VerificationLevel.Orb, // Orb | Device
 };
@@ -23,6 +25,7 @@ export const VerifyBlock = () => {
   const [handleVerifyResponse, setHandleVerifyResponse] = useState<
     MiniAppVerifyActionErrorPayload | IVerifyResponse | null
   >(null);
+  const [isVerified, setIsVerified] = useState(false); // State to track if verification succeeded
 
   const handleVerify = useCallback(async () => {
     if (!MiniKit.isInstalled()) {
@@ -57,25 +60,44 @@ export const VerifyBlock = () => {
       }
     );
 
-    // TODO: Handle Success!
     const verifyResponseJson = await verifyResponse.json();
 
     if (verifyResponseJson.status === 200) {
       console.log("Verification success!");
       console.log(finalPayload);
+      setIsVerified(true); // Set the state to true when verification is successful
+    } else {
+      setIsVerified(false); // If verification fails, reset the state
     }
 
     setHandleVerifyResponse(verifyResponseJson);
     return verifyResponseJson;
   }, []);
 
-  return (
-    <div>
-      <h1>Verify Block</h1>
-      <button className="bg-green-500 p-4" onClick={handleVerify}>
-        Test Verify
-      </button>
-      <span>{JSON.stringify(handleVerifyResponse, null, 2)}</span>
-    </div>
-  );
+  useEffect(() => {
+    if (!isVerified) {
+      handleVerify(); // Automatically call handleVerify on component mount
+    }
+  }, [isVerified, handleVerify]);
+
+  if (!isVerified) {
+    return (
+      <div>
+        <video autoPlay loop muted className='bgvideo'>
+          <source src={video} type="video/mp4" />
+        </video>
+        <div className="relative z-10 text-center text-black pt-10">
+        <button 
+          className="bg-black text-white p-4 rounded-full hover:bg-gray-800 transition duration-300"
+          onClick={handleVerify}
+        >
+          Verify yourself
+        </button>
+      </div>
+      </div>
+    );
+  }
+
+  // If verification is successful, render the App component
+  return <App />;
 };
