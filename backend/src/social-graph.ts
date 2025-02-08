@@ -10,7 +10,7 @@ interface Transaction {
 }
 
 //uVertexclass--each uVertexstores a user using our app
-class uVertex{
+export class uVertex{
     user: User;
     edges: Edge[];
 
@@ -25,7 +25,7 @@ class uVertex{
 }
 
 //edge class--a connection between two users (at least 1 valid transaction)
-class Edge {
+export class Edge {
     uVertexs: [uVertex, uVertex];
     transactions: Transaction[];
     transactionCount: number;
@@ -61,9 +61,10 @@ class Edge {
 }
 
 //graph class
-class Graph {
+export class Graph {
     uVertexs: uVertex[];
     edges: Edge[];
+    static uVertexs: any;
 
     constructor() {
         this.uVertexs = [];

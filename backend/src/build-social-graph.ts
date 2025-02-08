@@ -1,5 +1,6 @@
 import parquet from 'parquetjs-lite';
-//social graph classes
+import pt from "path";
+
 interface User {
   walletAddress: string;
 }
@@ -7,6 +8,16 @@ interface User {
 interface Transaction {
   hash: string;
 }
+
+interface Candidate {
+    edge: Edge;
+    path: uVertex[];
+  }
+  
+interface CandidateWithSeq extends Candidate {
+walletSeq: string[];
+}
+  
 
 class uVertex {
   user: User;
@@ -76,32 +87,39 @@ class Graph {
   }
 
   findShortestPath(origin: uVertex, target: uVertex): uVertex[] | null {
-    let queue: { uVertex: uVertex; path: uVertex[] }[] = [];
-    let visited = new Set<uVertex>();
+    const queue: { vertex: uVertex; path: uVertex[] }[] = [];
+    const visited = new Set<uVertex>();
 
-    queue.push({ uVertex: origin, path: [origin] });
+    queue.push({ vertex: origin, path: [origin] });
     visited.add(origin);
 
     while (queue.length > 0) {
-      const { uVertex, path } = queue.shift()!;
-      if (uVertex === target) {
+      const { vertex, path } = queue.shift()!;
+      if (vertex === target) {
         return path;
       }
-      for (const edge of uVertex.edges) {
-        const neighbor = edge.getNeighbor(uVertex);
+      for (const edge of vertex.edges) {
+        const neighbor = edge.getNeighbor(vertex);
         if (neighbor && !visited.has(neighbor)) {
           visited.add(neighbor);
-          queue.push({ uVertex: neighbor, path: [...path, neighbor] });
+          queue.push({ vertex: neighbor, path: [...path, neighbor] });
         }
       }
     }
     return null;
   }
+
   findPathsFromTargetEdges(origin: uVertex, target: uVertex): { edge: Edge; path: uVertex[] | null }[] {
     const results: { edge: Edge; path: uVertex[] | null }[] = [];
+    const processedNeighbors = new Set<string>(); 
+
     for (const edge of target.edges) {
       const neighbor = edge.getNeighbor(target);
       if (!neighbor) continue;
+      const neighborWallet = neighbor.user.walletAddress;
+      // Skip if we've already processed this neighbor.
+      if (processedNeighbors.has(neighborWallet)) continue;
+      processedNeighbors.add(neighborWallet);
       const path = this.findShortestPath(origin, neighbor);
       results.push({ edge, path });
     }
@@ -109,81 +127,124 @@ class Graph {
   }
 }
 
-//building the graph
-const SocialGraph = new Graph();
-
-function getOrCreateVertex(walletAddress: string): uVertex {
-  let vertex = SocialGraph.uVertexs.find(v => v.user.walletAddress === walletAddress);
-  if (!vertex) {
-    vertex = new uVertex({ walletAddress });
-    SocialGraph.adduVertex(vertex);
+function filterOverlappingPaths(
+    candidates: { edge: Edge; path: uVertex[] | null }[]
+  ): { edge: Edge; path: uVertex[] }[] {
+    // Filter out any candidate where path is null.
+    let valid = candidates.filter(c => c.path !== null) as Candidate[];
+  
+    // Map each candidate to include a temporary walletSeq property.
+    const withSeq = valid.map(candidate => ({
+      ...candidate,
+      walletSeq: candidate.path.map(v => v.user.walletAddress)
+    })) as CandidateWithSeq[];
+  
+    // Filter out candidates that have overlapping wallet sequences.
+    const unique = withSeq.filter((candA, idxA) => {
+      return !withSeq.some((candB, idxB) => {
+        if (idxA === idxB) return false;
+        const seqA = candA.walletSeq;
+        const seqB = candB.walletSeq;
+        if (seqA.length < seqB.length) {
+          // Check if seqA is a prefix of seqB.
+          for (let i = 0; i < seqA.length; i++) {
+            if (seqA[i] !== seqB[i]) return false;
+          }
+          return true;
+        }
+        return false;
+      });
+    });
+  
+    // Remove the temporary walletSeq property before returning.
+    return unique.map(({ walletSeq, ...rest }) => rest);
   }
-  return vertex;
-}
+  
 
-//parquet file
-async function processParquetFile(filepath: string): Promise<void> {
-  try {
-    const reader = await parquet.ParquetReader.opnFile(filepath);
-    const cursor = reader.getCursor();
-    let record: any = null;
+async function buildGraph(filename: string): Promise<Graph> {
+  const reader = await parquet.ParquetReader.openFile(filename);
+  const cursor = reader.getCursor();
+  let record: any = null;
+  const graph = new Graph();
+  const vertexMap: Map<string, uVertex> = new Map();
 
-    console.log(`Reading records from ${filepath}:`);
-    while (record = await cursor.next()) {
-      console.log("Record:", record);
-      // Assumes each record has the properties: from, to, and hash.
-      if (!record.from || !record.to || !record.hash) {
-        console.error("Record missing required fields:", record);
-        continue;
-      }
-      const fromVertex = getOrCreateVertex(record.from);
-      const toVertex = getOrCreateVertex(record.to);
+  console.log(`Reading records from ${filename}:`);
 
-      // Check if an edge already exists between the two vertices
-      let edge = SocialGraph.edges.find(e =>
-        (e.uVertexs[0] === fromVertex && e.uVertexs[1] === toVertex) ||
-        (e.uVertexs[0] === toVertex && e.uVertexs[1] === fromVertex)
-      );
+  while ((record = await cursor.next())) {
+    console.log("Record:", record);
+    const from = record.from;
+    const to = record.to;
+    const hash = record.hash;
 
-      if (!edge) {
-        edge = new Edge(fromVertex, toVertex);
-        SocialGraph.addEdge(edge);
-      }
-      edge.addTransaction({ hash: record.hash });
+    if (!from || !to || !hash) {
+      console.warn("Incomplete record:", record);
+      continue;
     }
 
-    await reader.close();
-    console.log("Finished reading Parquet file.");
-  } catch (err) {
-    console.error("Error reading Parquet file:", err);
+    let vertexFrom = vertexMap.get(from);
+    if (!vertexFrom) {
+      vertexFrom = new uVertex({ walletAddress: from });
+      vertexMap.set(from, vertexFrom);
+      graph.adduVertex(vertexFrom);
+    }
+    let vertexTo = vertexMap.get(to);
+    if (!vertexTo) {
+      vertexTo = new uVertex({ walletAddress: to });
+      vertexMap.set(to, vertexTo);
+      graph.adduVertex(vertexTo);
+    }
+
+    let edge = graph.edges.find(
+      e =>
+        (e.uVertexs[0] === vertexFrom && e.uVertexs[1] === vertexTo) ||
+        (e.uVertexs[0] === vertexTo && e.uVertexs[1] === vertexFrom)
+    );
+    if (!edge) {
+      edge = new Edge(vertexFrom, vertexTo);
+      graph.addEdge(edge);
+    }
+    edge.addTransaction({ hash });
   }
+
+  await reader.close();
+  console.log("Finished reading Parquet file.");
+
+  return graph;
 }
 
-async function main() {
-  await processParquetFile('transactions.parquet');
-
-  const originAddress = "0xdeaddeaddeaddeaddeaddeaddeaddeaddead0001";
-  const targetAddress = "0x35fa5004dca835b985f5c38430301f1a0279f190"; 
-
-  const originVertex = SocialGraph.uVertexs.find(v => v.user.walletAddress === originAddress);
-  const targetVertex = SocialGraph.uVertexs.find(v => v.user.walletAddress === targetAddress);
-
-  if (originVertex && targetVertex) {
-    const results = SocialGraph.findPathsFromTargetEdges(originVertex, targetVertex);
-    results.forEach(({ edge, path }, index) => {
-      const neighbor = edge.getNeighbor(targetVertex);
-      console.log(`Edge ${index + 1} (from ${targetVertex.user.walletAddress} to ${neighbor?.user.walletAddress}):`);
-      if (path) {
-        console.log("Shortest path from origin to neighbor:", path.map(n => n.user.walletAddress).join(" -> "));
-        console.log("Path length (nodes):", path.length);
-        console.log("Path length (edges):", path.length - 1);
-      } else {
-        console.log("No path found from origin to this neighbor.");
+export async function findGraphPaths(originAddress: string, targetAddress: string): Promise<void> {
+    try {
+      const graph = await buildGraph("/Users/shreyaas/Desktop/SWE\ PROJECTS/ReliabilityScore/backend/src/transactions.parquet");
+      const origin = graph.uVertexs.find(v => v.user.walletAddress === originAddress);
+      const target = graph.uVertexs.find(v => v.user.walletAddress === targetAddress);
+  
+      if (!origin || !target) {
+        console.log("Origin or target vertex not found in the graph.");
+        return;
       }
-    });
-  } else {
-    console.error("Origin or target vertex not found in the graph.");
-  }
-}
+  
+      console.log(`\nFinding candidate paths from ${originAddress} (origin) to each neighbor of ${targetAddress} (target):`);
+      const candidates = graph.findPathsFromTargetEdges(origin, target);
+      const filtered = filterOverlappingPaths(candidates);
+  
+      console.log(`\nFinal unique paths from ${originAddress} to ${targetAddress}:`);
+      filtered.forEach(({ edge, path }, index) => {
+        const neighbor = edge.getNeighbor(target);
+        console.log(`\nPath ${index + 1} (via neighbor ${neighbor?.user.walletAddress}):`);
+        if (path) {
+          console.log("Path (wallets):", path.map(v => v.user.walletAddress).join(" -> "));
+          console.log("Path length (nodes):", path.length);
+          console.log("Path length (edges):", path.length - 1);
+        } else {
+          console.log("No path found from origin to this neighbor.");
+        }
+      });
 
-main().catch(err => console.error("Error in main:", err));
+
+    } catch (err) {
+      console.error("Error in findGraphPaths:", err);
+    }
+  }
+
+
+//findGraphPaths("0xea07d7b355539b166b4e82c5baa9994aecfb3389", "0xff755b74386a995d1a65a49450cacff17fe5441b", "transactions.parquet").catch(err => console.error(err));

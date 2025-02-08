@@ -3,7 +3,7 @@
   "exclude": ["node_modules"],
   "compilerOptions": {
     "lib": ["ES2023"],
-    "target": "ESNext",
+    "target": "es2020",
     "module": "ESNext",
     "skipLibCheck": true,
     "baseUrl": ".",

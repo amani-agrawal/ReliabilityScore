@@ -18,11 +18,41 @@ const contacts = [
 const Search = () => {
   const navigate = useNavigate();
   const [searched, setSearched] = useState("");
+
+  const originWallet = "0xea07d7b355539b166b4e82c5baa9994aecfb3389";
+
+  navigate("/calculating");
+
+  const calculateGraphPaths = async () => {
+    try {
+      const response = await fetch('/api/findGraphPaths', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          originAddress: originWallet,
+          targetAddress: searched
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      navigate("/details", { state: data });
+    } catch (error) {
+      console.error("Error calculating graph paths:", error);
+      navigate("/noconnection", { state: {} });
+    }
+  }
   
+  /*
   // Filter contacts based on search query
   const filteredContacts = contacts.filter(contact =>
     contact.address.toLowerCase() == searched.toLowerCase()
-  );
+  );*/
 
   
   return (
@@ -39,9 +69,7 @@ const Search = () => {
             onChange={(e) => setSearched(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && searched) {
-                navigate(filteredContacts.length > 0 ? "/details" : "/noconnection", { 
-                  state: filteredContacts[0] || {} 
-                });
+                calculateGraphPaths();
               }
             }}            
             className="search-input"

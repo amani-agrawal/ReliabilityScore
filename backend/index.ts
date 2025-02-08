@@ -3,6 +3,7 @@ import express from "express";
 import { verifyHandler } from "./src/verify";
 import { initiatePaymentHandler } from "./src/initiate-payment";
 import { confirmPaymentHandler } from "./src/confirm-payment";
+import { findGraphPathsHandler } from "./src/sg-api";
 import cors from "cors";
 
 const app = express();
@@ -30,6 +31,7 @@ app.get("/ping", (_, res) => {
 app.post("/verify", verifyHandler);
 app.post("/initiate-payment", initiatePaymentHandler);
 app.post("/confirm-payment", confirmPaymentHandler);
+app.post("/calculate-score", findGraphPathsHandler);
 
 const port = 3000; // use env var
 app.listen(port, () => {
