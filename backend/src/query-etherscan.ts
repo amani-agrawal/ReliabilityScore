@@ -1,75 +1,94 @@
-// If using Node 18+, the built-in fetch is available.
-// For older versions, install node-fetch and import it.
-// import fetch from 'node-fetch';
+import parquet from 'parquetjs-lite';
+
+interface SimpleTransaction {
+  from: string;
+  to: string;
+  hash: string;
+}
 
 interface Transaction {
-    blockNumber: string;
-    timeStamp: string;
-    hash: string;
-    nonce: string;
-    blockHash: string;
-    transactionIndex: string;
-    from: string;
-    to: string;
-    value: string;
-    gas: string;
-    gasPrice: string;
-    input: string;
-    // Add additional fields as needed.
-  }
-  
-  interface EtherscanProxyResponse {
-    status: string;
-    message: string;
-    result: Transaction | null;
-  }
-  
-  async function main(): Promise<void> {
-    // In this example, we are working on chain 480.
-    const chains: number[] = [480];
-  
-    // Define the block number you want to query.
-    const blockNumberDec: number = 9822067;
-    // Convert the block number to hexadecimal.
-    const blockNumberHex: string = '0x' + blockNumberDec.toString(16);
-    
-    // We'll start with the transaction at index 0.
-    let index = 0;
-  
-    for (const chain of chains) {
-      console.log(`\nFetching transactions for chain ${chain}, block ${blockNumberDec} (${blockNumberHex})`);
-  
-      // Iterate over transaction indices until no transaction is found.
+  blockNumber: string;
+  timeStamp: string;
+  hash: string;
+  nonce: string;
+  blockHash: string;
+  transactionIndex: string;
+  from: string;
+  to: string;
+  value: string;
+  gas: string;
+  gasPrice: string;
+  input: string;
+}
+
+interface EtherscanProxyResponse {
+  status: string;
+  message: string;
+  result: Transaction | null;
+}
+
+const schema = new parquet.ParquetSchema({
+  from: { type: 'UTF8' },
+  to:   { type: 'UTF8' },
+  hash: { type: 'UTF8' }
+});
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function main(): Promise<void> {
+  const chains: number[] = [480];
+
+  const startBlockDec: number = 9822067;
+  const endBlockDec: number = 9822070;
+
+  const writer = await parquet.ParquetWriter.openFile(schema, 'transactions.parquet');
+
+  for (const chain of chains) {
+    console.log(`\nProcessing chain ${chain}`);
+    for (let block = startBlockDec; block <= endBlockDec; block++) {
+      const blockHex: string = '0x' + block.toString(16);
+      console.log(`\nFetching transactions for block ${block} (${blockHex})`);
+      let index = 0;
+      let queryCount = 0; 
       while (true) {
         const indexHex: string = '0x' + index.toString(16);
-        const url: string = `https://api.etherscan.io/v2/api?chainid=${chain}&module=proxy&action=eth_getTransactionByBlockNumberAndIndex&tag=${blockNumberHex}&index=${indexHex}&apikey=`;
+        const url: string = `https://api.etherscan.io/v2/api?chainid=${chain}&module=proxy&action=eth_getTransactionByBlockNumberAndIndex&tag=${blockHex}&index=${indexHex}&apikey=53SU3USFB3C3ZYH5Y6S817SZCSST8FE1PT`;
         
-        console.log(`\nQuerying transaction index ${index} (${indexHex}):`);
-        console.log(url);
+        console.log(`Querying block ${block} transaction index ${index} (${indexHex})`);
         
         try {
           const queryResponse = await fetch(url);
           const data = await queryResponse.json() as EtherscanProxyResponse;
-          
           if (!data.result) {
-            console.error(`Chain ${chain} - No transaction found at index ${index}. Stopping iteration.`);
-            break;
+            console.log(`No transaction at index ${index} for block ${block}.`);
+            break; 
           }
-          
-          console.log(`Chain ${chain} - Transaction details for block ${blockNumberDec} index ${index}:`);
-          console.log(data.result);
+          const simpleTx: SimpleTransaction = {
+            from: data.result.from,
+            to: data.result.to,
+            hash: data.result.hash
+          };
+          console.log(`Storing transaction: from ${simpleTx.from} to ${simpleTx.to}, hash ${simpleTx.hash}`);
+          await writer.appendRow(simpleTx);
+
+          queryCount++;
+          if (queryCount % 5 === 0) {
+            console.log("Reached 5 queries. Waiting for 1 minute...");
+            await delay(60000);
+          }
         } catch (error) {
-          console.error(`Chain ${chain} - Fetch error at index ${index}:`, error);
+          console.error(`Fetch error at block ${block}, index ${index}:`, error);
           break;
         }
-        
         index++;
       }
-      
-      // Reset the index if you're processing multiple chains.
-      index = 0;
     }
   }
   
-  main().catch(err => console.error('Main error:', err));
-  
+  await writer.close();
+  console.log('All transactions stored in transactions.parquet');
+}
+
+main().catch(err => console.error('Main error:', err));

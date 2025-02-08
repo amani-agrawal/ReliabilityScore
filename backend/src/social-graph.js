@@ -132,7 +132,8 @@ results.forEach(function (_a, index) {
     console.log("Edge ".concat(index + 1, " (from uVertex").concat(uVertexC.user.walletAddress, " to uVertex").concat(neighbor === null || neighbor === void 0 ? void 0 : neighbor.user.walletAddress, "):"));
     if (path) {
         console.log("Shortest path from origin to neighbor:", path.map(function (n) { return n.user.walletAddress; }).join(" -> "));
-        console.log("Path length: ", path.length - 1);
+        console.log("Path length (nodes): ", path.length);
+        console.log("Path length (edges): ", path.length - 1);
     }
     else {
         console.log("No path found from origin to this neighbor.");
