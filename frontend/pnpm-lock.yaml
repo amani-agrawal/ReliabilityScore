@@ -14,6 +14,9 @@ importers:
       '@worldcoin/minikit-js':
         specifier: 1.1.1
         version: 1.1.1(@types/react@18.3.9)(react@18.3.1)(typescript@5.6.2)(viem@2.21.15(typescript@5.6.2))
+      '@worldcoin/minikit-react':
+        specifier: ^1.5.0
+        version: 1.5.0(@types/react@18.3.9)(react@18.3.1)(typescript@5.6.2)(viem@2.21.15(typescript@5.6.2))
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
@@ -665,6 +668,19 @@ packages:
     resolution: {integrity: sha512-RzUZAim4TfmygQDzdo+RJ6O4xJ807aFVNif9w60Y/Rgj8GFI9V/wrTby5Okrt9B7obZ5CR86HKcMjlhJAwIxHw==}
     engines: {node: '>= 16'}
     peerDependencies:
+      viem: ^2.0.0
+
+  '@worldcoin/minikit-js@1.5.0':
+    resolution: {integrity: sha512-L0o4sQ4Z+lIhWRuaQGHU8YUFQ7vYfUgIh1YEu4z7otfuf3GAzPXfTTbcFYTEqYVjhYr2/9IbEGarZbEtmmrL5A==}
+    engines: {node: '>= 16'}
+    peerDependencies:
+      viem: ^2.0.0
+
+  '@worldcoin/minikit-react@1.5.0':
+    resolution: {integrity: sha512-fwG1g/2JHlTCSLaYru9l57+V+6MSr236BkZzZPBkPjB3A+Wt9edzVpaWF8C6HyUXk9KbMEUTaHHLwkmL0fNvqw==}
+    engines: {node: '>= 16'}
+    peerDependencies:
+      react: '>=18'
       viem: ^2.0.0
 
   abitype@1.0.5:
@@ -1545,6 +1561,40 @@ packages:
   tslib@2.4.0:
     resolution: {integrity: sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==}
 
+  turbo-darwin-64@2.4.0:
+    resolution: {integrity: sha512-kVMScnPUa3R4n7woNmkR15kOY0aUwCLJcUyH5UC59ggKqr5HIHwweKYK8N1pwBQso0LQF4I9i93hIzfJguCcwQ==}
+    cpu: [x64]
+    os: [darwin]
+
+  turbo-darwin-arm64@2.4.0:
+    resolution: {integrity: sha512-8JObIpfun1guA7UlFR5jC/SOVm49lRscxMxfg5jZ5ABft79rhFC+ygN9AwAhGKv6W2DUhIh2xENkSgu4EDmUyg==}
+    cpu: [arm64]
+    os: [darwin]
+
+  turbo-linux-64@2.4.0:
+    resolution: {integrity: sha512-xWDGGcRlBuGV7HXWAVuTY6vsQi4aZxGMAnuiuNDg8Ij1aHGohOM0RUsWMXjxz4vuJmjk9+/D6NQqHH3AJEXezg==}
+    cpu: [x64]
+    os: [linux]
+
+  turbo-linux-arm64@2.4.0:
+    resolution: {integrity: sha512-c3En99xMguc/Pdtk/rZP53LnDdw0W6lgUc04he8r8F+UHYSNvgzHh0WGXXmCC6lGbBH72kPhhGx4bAwyvi7dug==}
+    cpu: [arm64]
+    os: [linux]
+
+  turbo-windows-64@2.4.0:
+    resolution: {integrity: sha512-/gOORuOlyA8JDPzyA16CD3wvyRcuBFePa1URAnFUof9hXQmKxK0VvSDO79cYZFsJSchCKNJpckUS0gYxGsWwoA==}
+    cpu: [x64]
+    os: [win32]
+
+  turbo-windows-arm64@2.4.0:
+    resolution: {integrity: sha512-/DJIdTFijEMM5LSiEpSfarDOMOlYqJV+EzmppqWtHqDsOLF4hbbIBH9sJR6OOp5dURAu5eURBYdmvBRz9Lo6TA==}
+    cpu: [arm64]
+    os: [win32]
+
+  turbo@2.4.0:
+    resolution: {integrity: sha512-ah/yQp2oMif1X0u7fBJ4MLMygnkbKnW5O8SG6pJvloPCpHfFoZctkSVQiJ3VnvNTq71V2JJIdwmOeu1i34OQyg==}
+    hasBin: true
+
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -2246,6 +2296,35 @@ snapshots:
       - bufferutil
       - immer
       - react
+      - typescript
+      - utf-8-validate
+      - zod
+
+  '@worldcoin/minikit-js@1.5.0(@types/react@18.3.9)(react@18.3.1)(typescript@5.6.2)(viem@2.21.15(typescript@5.6.2))':
+    dependencies:
+      '@worldcoin/idkit-core': 1.3.0(@types/react@18.3.9)(react@18.3.1)(typescript@5.6.2)
+      abitype: 1.0.6(typescript@5.6.2)
+      viem: 2.21.15(typescript@5.6.2)
+    transitivePeerDependencies:
+      - '@types/react'
+      - bufferutil
+      - immer
+      - react
+      - typescript
+      - utf-8-validate
+      - zod
+
+  '@worldcoin/minikit-react@1.5.0(@types/react@18.3.9)(react@18.3.1)(typescript@5.6.2)(viem@2.21.15(typescript@5.6.2))':
+    dependencies:
+      '@worldcoin/minikit-js': 1.5.0(@types/react@18.3.9)(react@18.3.1)(typescript@5.6.2)(viem@2.21.15(typescript@5.6.2))
+      abitype: 1.0.6(typescript@5.6.2)
+      react: 18.3.1
+      turbo: 2.4.0
+      viem: 2.21.15(typescript@5.6.2)
+    transitivePeerDependencies:
+      - '@types/react'
+      - bufferutil
+      - immer
       - typescript
       - utf-8-validate
       - zod
@@ -3091,6 +3170,33 @@ snapshots:
   ts-interface-checker@0.1.13: {}
 
   tslib@2.4.0: {}
+
+  turbo-darwin-64@2.4.0:
+    optional: true
+
+  turbo-darwin-arm64@2.4.0:
+    optional: true
+
+  turbo-linux-64@2.4.0:
+    optional: true
+
+  turbo-linux-arm64@2.4.0:
+    optional: true
+
+  turbo-windows-64@2.4.0:
+    optional: true
+
+  turbo-windows-arm64@2.4.0:
+    optional: true
+
+  turbo@2.4.0:
+    optionalDependencies:
+      turbo-darwin-64: 2.4.0
+      turbo-darwin-arm64: 2.4.0
+      turbo-linux-64: 2.4.0
+      turbo-linux-arm64: 2.4.0
+      turbo-windows-64: 2.4.0
+      turbo-windows-arm64: 2.4.0
 
   type-check@0.4.0:
     dependencies:
