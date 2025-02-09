@@ -136,7 +136,7 @@ async function buildGraph(filename: string): Promise<Graph> {
   console.log(`Reading records from ${filename}:`);
 
   while ((record = await cursor.next())) {
-    console.log("Record:", record);
+    
     const from = record.from;
     const to = record.to;
     const hash = record.hash;
@@ -177,15 +177,31 @@ async function buildGraph(filename: string): Promise<Graph> {
   return graph;
 }
 
-export async function findGraphPaths(originAddress: string, targetAddress: string): Promise<{ via: string | null; path: string[]; node_length: number; edge_length: number }[]> {
+export async function findGraphPaths(originAddress: string, targetAddress: string): Promise<{
+    simplePaths: { via: string | null; path: string[]; node_length: number; edge_length: number }[];
+    calculation: {
+      totalReputation: number;
+      gps: number;
+      percentageReputationScore: number;
+    }
+  }> {
     try {
-      const graph = await buildGraph("/Users/shreyaas/Desktop/SWE\ PROJECTS/ReliabilityScore/backend/src/transactions.parquet");
+      // Adjust the filename path as needed.
+      const filename = "/Users/shreyaas/Desktop/SWE PROJECTS/ReliabilityScore/backend/src/transactions.parquet";
+      const graph = await buildGraph(filename);
       const origin = graph.uVertexs.find(v => v.user.walletAddress === originAddress);
       const target = graph.uVertexs.find(v => v.user.walletAddress === targetAddress);
   
       if (!origin || !target) {
         console.log("Origin or target vertex not found in the graph.");
-        return [];
+        return {
+          simplePaths: [],
+          calculation: {
+            totalReputation: 0,
+            gps: 0,
+            percentageReputationScore: 0,
+          },
+        };
       }
   
       console.log(`\nFinding candidate paths from ${originAddress} (origin) to each neighbor of ${targetAddress} (target):`);
@@ -203,23 +219,50 @@ export async function findGraphPaths(originAddress: string, targetAddress: strin
           console.log("No path found from origin to this neighbor.");
         }
       });
-
+  
+      // Build an array of simple paths for external use.
       const simplePaths = candidates
-      .filter(candidate => candidate.path !== null)
-      .map(candidate => {
-        const neighbor = candidate.edge.getNeighbor(target);
-        return {
-          via: neighbor ? neighbor.user.walletAddress : null,
-          path: candidate.path!.map(v => v.user.walletAddress),
-          node_length: candidate.path!.length,
-          edge_length: candidate.path!.length - 1
-        };
+        .filter(candidate => candidate.path !== null)
+        .map(candidate => {
+          const neighbor = candidate.edge.getNeighbor(target);
+          return {
+            via: neighbor ? neighbor.user.walletAddress : null,
+            path: candidate.path!.map(v => v.user.walletAddress),
+            node_length: candidate.path!.length,
+            edge_length: candidate.path!.length - 1,
+          };
+        });
+  
+      // --- Reputation Calculation ---
+      // For each candidate (whether or not a valid path exists), calculate a reputation score.
+      const repResults = candidates.map(({ edge, path }) => {
+        if (!path) return 0;
+        const nodeLength = path.length;
+        return 1 - (0.72662 / 0.8007407) * (1 - Math.exp(-0.8007407 * nodeLength));
       });
-
-    return simplePaths;
+  
+      const gps = repResults.length; // greatest possible score is the number of candidate paths
+      const totalReputation = repResults.reduce((sum, score) => sum + score, 0);
+      const percentageReputationScore = gps > 0 ? (totalReputation / gps) * 100 : 0;
+  
+      return {
+        simplePaths,
+        calculation: {
+          totalReputation,
+          gps,
+          percentageReputationScore,
+        },
+      };
     } catch (err) {
       console.error("Error in findGraphPaths:", err);
-      return [];
+      return {
+        simplePaths: [],
+        calculation: {
+          totalReputation: 0,
+          gps: 0,
+          percentageReputationScore: 0,
+        },
+      };
     }
   }
 

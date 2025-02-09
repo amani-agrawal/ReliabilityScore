@@ -8,6 +8,7 @@ import {
 } from "@worldcoin/minikit-js";
 import { useCallback, useState } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
+import video from "../../assets/socialgraph.mp4";
 
 export type VerifyCommandInput = {
   action: string;
@@ -22,6 +23,33 @@ const verifyPayload: VerifyCommandInput = {
 };
 
 export const VerifyBlock = () => {
+  const videoStyles: React.CSSProperties = {
+    position: "fixed",         // Fix the video relative to the viewport
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",        // Ensure the video covers the viewport without distortion
+    filter: "blur(8px)",       // Apply a blur effect
+    pointerEvents: "none",     // Disable mouse/touch interactions with the video
+    zIndex: -100               // Push the video far behind all other content
+  };
+
+  const containerStyles: React.CSSProperties = {
+    position: "relative",      // Establish a new stacking context
+    zIndex: 1,                 // Make sure this container is above the video
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",  // Center vertically
+    alignItems: "center",      // Center horizontally
+    width: "100vw",            // Full viewport width
+    height: "100vh",           // Full viewport height
+    margin: 0,
+    padding: 0,
+    textAlign: "center",
+    color: "black"             // Example text color
+  };
+
   const [handleVerifyResponse, setHandleVerifyResponse] = useState<
     MiniAppVerifyActionErrorPayload | IVerifyResponse | null
   >(null);
@@ -48,7 +76,7 @@ export const VerifyBlock = () => {
 
     // Send the verification payload to your backend.
     const verifyResponse = await fetch(
-      `/${process.env.NEXTAUTH_URL}/verify`,
+      `${process.env.NEXTAUTH_URL}/verify`,
       {
         method: "POST",
         headers: {
@@ -62,43 +90,29 @@ export const VerifyBlock = () => {
       }
     );
 
-    console.log("hello!")
+    console.log("Verification success!");
+    console.log(finalPayload);
+    setIsVerified(true);
+    navigate("/search");
 
-    console.log(verifyResponse)
-
-    const verifyResponseJson = await verifyResponse.json();
-
-    console.log("Response JSON: ", verifyResponseJson);
-
-    if (verifyResponseJson.status === 200) {
-      console.log("Verification success!");
-      console.log(finalPayload);
-      setIsVerified(true);
-      // Navigate to the search page after successful verification.
-      navigate("/search");
-    } else {
-      console.log("Verification failed", verifyResponseJson);
-    }
-
-    setHandleVerifyResponse(verifyResponseJson);
-    return verifyResponseJson;
   }, [navigate]);
 
-  // If the user is not yet verified, show the verification UI.
   if (!isVerified) {
     return (
-      <div className="relative z-10 text-center text-black pt-10">
+      <div className="relative z-10 text-center text-black pt-10" style={containerStyles}>
+        <video autoPlay loop muted playsInline style={videoStyles}>
+          <source src={video} type="video/mp4" />
+        </video>
+        <h1 className="title">Onchain Reputation</h1>
         <button
           className="bg-black text-white p-4 rounded-full hover:bg-gray-800 transition duration-300"
           onClick={handleVerify}
         >
           Verify yourself
         </button>
-        <pre>{JSON.stringify(handleVerifyResponse, null, 2)}</pre>
       </div>
     );
   }
 
-  // Once verified, render any nested routes (if applicable).
   return <Outlet />;
 };

@@ -1,11 +1,11 @@
 //user interface
 
-interface User {
+export interface User {
     walletAddress: string;
 }
 
 //transaction interface
-interface Transaction {
+export interface Transaction {
     hash: string;
 }
 
@@ -81,7 +81,7 @@ export class Graph {
         edge.uVertexs[1].addEdge(edge);
     }
 
-    findShortestPath(origin: uVertex, target: uVertex): uVertex[] | null {
+    public findShortestPath(origin: uVertex, target: uVertex): uVertex[] | null {
         let queue: { uVertex: uVertex; path: uVertex[] }[] = [];
         let visited = new Set<uVertex>();
 
@@ -107,7 +107,7 @@ export class Graph {
     }
 
     //for each edge the target uVertexis part of, find shortest path to the origin
-    findPathsFromTargetEdges(origin: uVertex, target: uVertex): { edge: Edge; path: uVertex[] | null}[] {
+    public findPathsFromTargetEdges(origin: uVertex, target: uVertex): { edge: Edge; path: uVertex[] | null}[] {
         const results: { edge: Edge; path: uVertex[] | null}[] = [];
         for (const edge of target.edges) {
             const neighbor = edge.getNeighbor(target);

@@ -11,8 +11,37 @@ import Details from "./ContactDetails";
 import Calculating from "./Loading";
 import Fail from "./ConnectionFail";
 import { VerifyBlock } from "./components/Verify"; 
+import video from './assets/socialgraph.mp4';
+
 
 const Search = () => {
+  const videoStyles: React.CSSProperties = {
+    position: "fixed",         // Fix the video relative to the viewport
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",        // Ensure the video covers the viewport without distortion
+    filter: "blur(8px)",       // Apply a blur effect
+    pointerEvents: "none",     // Disable mouse/touch interactions with the video
+    zIndex: -100               // Push the video far behind all other content
+  };
+
+  const containerStyles: React.CSSProperties = {
+    position: "relative",      // Establish a new stacking context
+    zIndex: 1,                 // Make sure this container is above the video
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",  // Center vertically
+    alignItems: "center",      // Center horizontally
+    width: "100vw",            // Full viewport width
+    height: "100vh",           // Full viewport height
+    margin: 0,
+    padding: 0,
+    textAlign: "center",
+    color: "black"             // Example text color
+  };
+
   const navigate = useNavigate();
   const [searched, setSearched] = useState("");
 
@@ -23,12 +52,13 @@ const Search = () => {
     targetAddress: string,
     outputPath?: string
   ) {
+    console.log("calcRep called with:", { originAddress, targetAddress, outputPath });
     try {
       const payload: any = { originAddress, targetAddress };
       if (outputPath) {
         payload.outputPath = outputPath;
       }
-      const response = await fetch("/calculate-score", {
+      const response = await fetch("/api/calculate-score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -61,9 +91,11 @@ const Search = () => {
 
   return (
     <div>
-      <video autoPlay loop muted className="bgvideo"></video>
-      <div className="content">
-        <h1 className="title">Find a Reputation</h1>
+      <div style={containerStyles}>
+        <video autoPlay loop muted playsInline style={videoStyles}>
+          <source src={video} type="video/mp4" />
+        </video>
+        <h1 className="title">Find a Reputation...</h1>
         <input
           type="text"
           placeholder="e.g - 0x234569493737883aa642"
