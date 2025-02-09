@@ -1,19 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import Details from './ContactDetails';
-import video from './assets/socialgraph.mp4';
-import Calculating from './Loading';
-import Fail from './ConnectionFail';
-
-//SAMPLE DATA BELOW --PLS DELETE
-const contacts = [
-  { score: 82, address: "0x234569493737883aa642", uniquePaths: 12, strength: 58},
-  { score: 90, address: "0x830447C87C893b19d97d9f1405E08F8d6480542F", uniquePaths: 2, strength: 98},
-  { score: 78, address: "Wallet 3", uniquePaths: 1, strength: 17},
-  { score: 88, address: "Wallet 4", uniquePaths: 14, strength: 78},
-  { score: 92, address: "Wallet 5", uniquePaths: 56, strength: 74},
-  { score: 99, address: "Wallet 6", uniquePaths: 9, strength: 37}
-];
+// App.tsx
+import React, { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
+import Details from "./ContactDetails";
+import Calculating from "./Loading";
+import Fail from "./ConnectionFail";
+import { VerifyBlock } from "./components/Verify"; 
 
 const Search = () => {
   const navigate = useNavigate();
@@ -21,73 +18,78 @@ const Search = () => {
 
   const originWallet = "0xea07d7b355539b166b4e82c5baa9994aecfb3389";
 
-  navigate("/calculating");
-
-  const calculateGraphPaths = async () => {
+  async function calcRep(
+    originAddress: string,
+    targetAddress: string,
+    outputPath?: string
+  ) {
     try {
-      const response = await fetch('/api/findGraphPaths', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          originAddress: originWallet,
-          targetAddress: searched
-        })
+      const payload: any = { originAddress, targetAddress };
+      if (outputPath) {
+        payload.outputPath = outputPath;
+      }
+      const response = await fetch("/calculate-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-
       if (!response.ok) {
         throw new Error(`Backend API error: ${response.statusText}`);
       }
-
       const data = await response.json();
-      navigate("/details", { state: data });
+      return data;
     } catch (error) {
-      console.error("Error calculating graph paths:", error);
-      navigate("/noconnection", { state: {} });
+      console.error("Error in calcRep:", error);
+      return null;
     }
   }
-  
-  /*
-  // Filter contacts based on search query
-  const filteredContacts = contacts.filter(contact =>
-    contact.address.toLowerCase() == searched.toLowerCase()
-  );*/
 
-  
+  const handleEnter = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searched) {
+      const result = await calcRep(
+        originWallet,
+        searched,
+        "transactions.parquet"
+      );
+      if (result) {
+        navigate("/details", { state: result });
+      } else {
+        navigate("/noconnection", { state: {} });
+      }
+    }
+  };
+
   return (
-      <div >
-        <video autoPlay loop muted className='bgvideo'>
-          <source src={video} type="video/mp4" />
-        </video>
-        <div className="content">
-          <h1 className="title">Find a Reputation</h1>
-          <input
-            type="text"
-            placeholder="e.g - 0x234569493737883aa642"
-            value={searched}
-            onChange={(e) => setSearched(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && searched) {
-                calculateGraphPaths();
-              }
-            }}            
-            className="search-input"
-          />
-        </div>
+    <div>
+      <video autoPlay loop muted className="bgvideo"></video>
+      <div className="content">
+        <h1 className="title">Find a Reputation</h1>
+        <input
+          type="text"
+          placeholder="e.g - 0x234569493737883aa642"
+          value={searched}
+          onChange={(e) => setSearched(e.target.value)}
+          onKeyDown={handleEnter}
+          className="search-input"
+        />
       </div>
-    );
-}
-
+    </div>
+  );
+};
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Search />} />
-        <Route path="/details" element={<Details />} />
-        <Route path="/calculating" element={<Calculating />} />
-        <Route path="/noconnection" element={<Fail />} />
+        {/* Wrap all routes with the verification block */}
+        <Route element={<VerifyBlock />}>
+          <Route path="/search" element={<Search />} />
+          <Route path="/details" element={<Details />} />
+          <Route path="/calculating" element={<Calculating />} />
+          <Route path="/noconnection" element={<Fail />} />
+          {/* If no route matches, redirect to /search */}
+          <Route path="*" element={<Navigate to="/search" replace />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

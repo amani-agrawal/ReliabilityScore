@@ -1,3 +1,4 @@
+// components/VerifyBlock.tsx
 import {
   MiniKit,
   VerificationLevel,
@@ -6,23 +7,26 @@ import {
   IVerifyResponse,
 } from "@worldcoin/minikit-js";
 import { useCallback, useState } from "react";
+import { useNavigate, Outlet } from "react-router-dom";
 
 export type VerifyCommandInput = {
   action: string;
   signal?: string;
-  verification_level?: VerificationLevel.Device; // Default: Orb
+  verification_level?: VerificationLevel.Device;
 };
 
 const verifyPayload: VerifyCommandInput = {
-  action: "test-action", // This is your action ID from the Developer Portal
+  action: "verify-ppl", // This is your action ID from the Developer Portal
   signal: "",
-  verification_level: VerificationLevel.Device, // Orb | Device
+  verification_level: VerificationLevel.Device, // Device or Orb
 };
 
 export const VerifyBlock = () => {
   const [handleVerifyResponse, setHandleVerifyResponse] = useState<
     MiniAppVerifyActionErrorPayload | IVerifyResponse | null
   >(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const navigate = useNavigate();
 
   const handleVerify = useCallback(async () => {
     if (!MiniKit.isInstalled()) {
@@ -30,20 +34,21 @@ export const VerifyBlock = () => {
       return null;
     }
 
+    // Trigger the verification command from MiniKit.
     const { finalPayload } = await MiniKit.commandsAsync.verify(verifyPayload);
 
-    // no need to verify if command errored
+    // If there was an error in the verification command, update state and exit.
     if (finalPayload.status === "error") {
-      console.log("Command error");
-      console.log(finalPayload);
-
+      console.log("Command error", finalPayload);
       setHandleVerifyResponse(finalPayload);
       return finalPayload;
     }
 
-    // Verify the proof in the backend
+    console.log("handleVerify called 2");
+
+    // Send the verification payload to your backend.
     const verifyResponse = await fetch(
-      `${process.env.NEXTAUTH_URL}/api/verify`,
+      `/${process.env.NEXTAUTH_URL}/verify`,
       {
         method: "POST",
         headers: {
@@ -57,25 +62,43 @@ export const VerifyBlock = () => {
       }
     );
 
-    // TODO: Handle Success!
+    console.log("hello!")
+
+    console.log(verifyResponse)
+
     const verifyResponseJson = await verifyResponse.json();
+
+    console.log("Response JSON: ", verifyResponseJson);
 
     if (verifyResponseJson.status === 200) {
       console.log("Verification success!");
       console.log(finalPayload);
+      setIsVerified(true);
+      // Navigate to the search page after successful verification.
+      navigate("/search");
+    } else {
+      console.log("Verification failed", verifyResponseJson);
     }
 
     setHandleVerifyResponse(verifyResponseJson);
     return verifyResponseJson;
-  }, []);
+  }, [navigate]);
 
-  return (
-    <div>
-      <h1>Verify Block</h1>
-      <button className="bg-green-500 p-4" onClick={handleVerify}>
-        Test Verify
-      </button>
-      <span>{JSON.stringify(handleVerifyResponse, null, 2)}</span>
-    </div>
-  );
+  // If the user is not yet verified, show the verification UI.
+  if (!isVerified) {
+    return (
+      <div className="relative z-10 text-center text-black pt-10">
+        <button
+          className="bg-black text-white p-4 rounded-full hover:bg-gray-800 transition duration-300"
+          onClick={handleVerify}
+        >
+          Verify yourself
+        </button>
+        <pre>{JSON.stringify(handleVerifyResponse, null, 2)}</pre>
+      </div>
+    );
+  }
+
+  // Once verified, render any nested routes (if applicable).
+  return <Outlet />;
 };

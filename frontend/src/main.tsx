@@ -5,6 +5,7 @@ import MiniKitProvider from "./minikit-provider.tsx";
 import { StrictMode } from "react";
 import { ErudaProvider } from "./components/Eruda";
 
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErudaProvider>

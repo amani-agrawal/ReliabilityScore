@@ -117,7 +117,6 @@ class Graph {
       const neighbor = edge.getNeighbor(target);
       if (!neighbor) continue;
       const neighborWallet = neighbor.user.walletAddress;
-      // Skip if we've already processed this neighbor.
       if (processedNeighbors.has(neighborWallet)) continue;
       processedNeighbors.add(neighborWallet);
       const path = this.findShortestPath(origin, neighbor);
@@ -125,41 +124,7 @@ class Graph {
     }
     return results;
   }
-}
-
-function filterOverlappingPaths(
-    candidates: { edge: Edge; path: uVertex[] | null }[]
-  ): { edge: Edge; path: uVertex[] }[] {
-    // Filter out any candidate where path is null.
-    let valid = candidates.filter(c => c.path !== null) as Candidate[];
-  
-    // Map each candidate to include a temporary walletSeq property.
-    const withSeq = valid.map(candidate => ({
-      ...candidate,
-      walletSeq: candidate.path.map(v => v.user.walletAddress)
-    })) as CandidateWithSeq[];
-  
-    // Filter out candidates that have overlapping wallet sequences.
-    const unique = withSeq.filter((candA, idxA) => {
-      return !withSeq.some((candB, idxB) => {
-        if (idxA === idxB) return false;
-        const seqA = candA.walletSeq;
-        const seqB = candB.walletSeq;
-        if (seqA.length < seqB.length) {
-          // Check if seqA is a prefix of seqB.
-          for (let i = 0; i < seqA.length; i++) {
-            if (seqA[i] !== seqB[i]) return false;
-          }
-          return true;
-        }
-        return false;
-      });
-    });
-  
-    // Remove the temporary walletSeq property before returning.
-    return unique.map(({ walletSeq, ...rest }) => rest);
-  }
-  
+} 
 
 async function buildGraph(filename: string): Promise<Graph> {
   const reader = await parquet.ParquetReader.openFile(filename);
@@ -212,7 +177,7 @@ async function buildGraph(filename: string): Promise<Graph> {
   return graph;
 }
 
-export async function findGraphPaths(originAddress: string, targetAddress: string): Promise<void> {
+export async function findGraphPaths(originAddress: string, targetAddress: string): Promise<{ via: string | null; path: string[]; node_length: number; edge_length: number }[]> {
     try {
       const graph = await buildGraph("/Users/shreyaas/Desktop/SWE\ PROJECTS/ReliabilityScore/backend/src/transactions.parquet");
       const origin = graph.uVertexs.find(v => v.user.walletAddress === originAddress);
@@ -220,15 +185,14 @@ export async function findGraphPaths(originAddress: string, targetAddress: strin
   
       if (!origin || !target) {
         console.log("Origin or target vertex not found in the graph.");
-        return;
+        return [];
       }
   
       console.log(`\nFinding candidate paths from ${originAddress} (origin) to each neighbor of ${targetAddress} (target):`);
       const candidates = graph.findPathsFromTargetEdges(origin, target);
-      const filtered = filterOverlappingPaths(candidates);
   
       console.log(`\nFinal unique paths from ${originAddress} to ${targetAddress}:`);
-      filtered.forEach(({ edge, path }, index) => {
+      candidates.forEach(({ edge, path }, index) => {
         const neighbor = edge.getNeighbor(target);
         console.log(`\nPath ${index + 1} (via neighbor ${neighbor?.user.walletAddress}):`);
         if (path) {
@@ -240,11 +204,22 @@ export async function findGraphPaths(originAddress: string, targetAddress: strin
         }
       });
 
+      const simplePaths = candidates
+      .filter(candidate => candidate.path !== null)
+      .map(candidate => {
+        const neighbor = candidate.edge.getNeighbor(target);
+        return {
+          via: neighbor ? neighbor.user.walletAddress : null,
+          path: candidate.path!.map(v => v.user.walletAddress),
+          node_length: candidate.path!.length,
+          edge_length: candidate.path!.length - 1
+        };
+      });
 
+    return simplePaths;
     } catch (err) {
       console.error("Error in findGraphPaths:", err);
+      return [];
     }
   }
 
-
-//findGraphPaths("0xea07d7b355539b166b4e82c5baa9994aecfb3389", "0xff755b74386a995d1a65a49450cacff17fe5441b", "transactions.parquet").catch(err => console.error(err));

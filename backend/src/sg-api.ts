@@ -16,11 +16,8 @@ export const findGraphPathsHandler: RequestHandler = async (req, res, next) => {
       return;
     }
     
-    // Call your findGraphPaths function (which reads from your Parquet file)
-    // and returns the computed graph paths.
     const paths = await findGraphPaths(originAddress, targetAddress);
-    
-    // Send the result as JSON.
+
     res.json({ paths });
   } catch (err) {
     next(err);
